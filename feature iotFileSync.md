@@ -1,10 +1,13 @@
-# Folder Sync — Feature Specification
+# Folder Sync
 
-**Version:** 0.1 · **Last updated:** 2026-06-18
-**Status:** Draft
-**Owner:** Jonathan, Haven Lighting
-**Target device:** ESP32-S3 lighting controller
-**Last updated:** 2026-06-18
+| | |
+|---|---|
+| **Version** | 0.2 |
+| **Status** | Draft |
+| **Last updated** | 2026-06-18 |
+| **Owner** | Jonathan, Haven Lighting |
+| **Target / scope** | ESP32-S3 lighting controller |
+| **Classification** | Internal |
 
 ---
 
@@ -23,6 +26,12 @@ This turns the server into an essentially static file host. There is no per-devi
 - Make append the fast path, since ~80% of changes are pure appends.
 - Detect adds, deletes, appends, and mid-file edits, including many occurring simultaneously.
 - Consolidate shared files server-side so the bulk of the file set is computed and served once for the whole fleet.
+
+### Non-goals
+
+- Malicious-modification / tamper protection — the 16-bit CRC is change detection only, not authentication (see §8).
+- Application-level reassembly of oversized single responses.
+- Transports other than HTTP in v1 — IoT-hub and WebSocket sync are anticipated but unspecified (see §9.4).
 
 ### Scale and limits
 
@@ -237,3 +246,12 @@ The measured number feeds directly into the chunk-leaf width decision (§9.2) an
 - 3 MB ÷ 8 KB = **384** chunks (binary units). At 2 bytes each, 768 bytes for a full 8 KB-chunk vector — which is why the fixed 64-entry cap (§4) exists.
 - 3 MB ÷ 64 KB = **48** chunks — the large-file tier, comfortably under the 64 cap.
 - 16-bit CRC value space = **65,536** → ~1-in-65,536 per-chunk collision probability (§8).
+
+---
+
+## Revision History
+
+| Version | Date | Author | Change |
+|---|---|---|---|
+| 0.1 | 2026-06-18 | Jonathan | Initial draft |
+| 0.2 | 2026-06-18 | Jonathan | Standardized to common spec template (metadata table, plain title, Non-goals subsection, Revision History); removed duplicate "Last updated" line |

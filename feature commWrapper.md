@@ -1,16 +1,22 @@
-# Socket Communications Wrapper Specification
+# Socket Communications Wrapper
 
 | | |
 |---|---|
 | **Protocol Version** | 1.0 |
-| **Document Revision** | v24 |
-| **Date** | 2026-06-18 |
+| **Document Revision** | v25 |
 | **Status** | Active |
+| **Last updated** | 2026-06-18 |
+| **Owner** | Jonathan, Haven Lighting |
+| **Target / scope** | Host client ↔ embedded device (ESP32) JSON messaging, all transports |
+| **Classification** | Internal |
+
+> This document tracks a **Protocol Version** plus a **Document Revision** (`vNN`); it does not use the `0.x` versioning of the other specs. Bump the Document Revision and add a Revision History row on every edit.
 
 ### Revision History
 
 | Rev | Date       | Protocol Version | Description                                                                                                                                                                                |
 | --- | ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| v25 | 2026-06-18 | 1.0              | Aligned document structure to the common spec template: standardized metadata table (added Owner, Target/scope, Classification), plain title, and added Goals & Non-Goals and Open Questions sections. No protocol changes. |
 | v24 | 2026-06-18 | 1.0              | Transport model reworked. Top-level container is now mandatory on **every** transport, guaranteeing a single parser with no per-transport branching or escape characters. Framing responsibility separated from message structure. The "Container Required" column is replaced by a message-initiation capability table governed by a single rule. UDP added as a transport. OTA chunk transfer given explicit timeout/retransmit and idempotent re-ack semantics. `MENU` documented as the one actor whose payload is a JSON array. |
 | v23 | 2026-05-27 | 1.0              | Strict JSON throughout; BLE advertisement structure with company ID `0x10C5`, product ID table, scan response, and device filtering; Device Identity handshake section; Data Types section |
 
@@ -56,6 +62,11 @@ The wrapper is **transport-independent**. The same message structure is carried 
 - Actors serve as both the command target and the organizational namespace.
 - The `ack` payload always reflects the actual applied value, not the requested one.
 - **One parser, every transport.** A single parsing function handles every message on every transport. There are no escape characters, no transport-specific container, and no conditional "is the container present?" branch.
+
+### Goals & Non-Goals
+
+- **Goals** — a single transport-independent JSON message structure parsed identically everywhere; one parser with no per-transport branching; synchronous command/response plus unsolicited device messaging where the transport allows; self-contained OTA delivery guarantees.
+- **Non-Goals** — transport-level framing details beyond the stream-framing convention (§1.1); application-level reassembly of oversized single responses (e.g. large menu responses over UDP); cryptographic authentication of messages.
 
 ### The Single Parser
 Every message — regardless of transport — is parsed the same way:
@@ -514,6 +525,17 @@ The per-chunk `ack` means OTA carries its own delivery guarantee and does not de
 
 #### Duplicate Handling (Idempotency)
 Because a retransmit can cause a chunk to arrive twice (e.g., when an `ack` was lost rather than the chunk), the receiver MUST treat a `seq` it has already applied idempotently: re-send the `ack` for that `seq` and do **not** write the chunk again. This makes the transfer safe under any number of retransmissions.
+
+---
+
+## 10. Open Questions
+
+| # | Question | Owner |
+|---|---|---|
+| 1 | What are the OTA retransmit timer default and the bounded retry count for UDP? | Firmware |
+| 2 | Is there a maximum message size cap per transport, and how should oversized menu responses be handled on UDP (chunking strategy)? | Firmware / protocol |
+| 3 | How are `mID` values allocated and wrapped to avoid collision on long-lived connections? | Firmware / app |
+| 4 | Should the protocol define authentication/integrity for any transport, or is that left to the transport layer? | Security |
 
 ---
 

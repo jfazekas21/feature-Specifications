@@ -1,20 +1,30 @@
 # Haven Game Day Technology
 
-**Version:** 0.1 · **Last updated:** 2026-06-18
-
-Haven Game Day Technology brings your team's colors to life — automatically. Built into every Haven full-color outdoor lighting system, this Sports AI feature connects your favorite teams directly to your lights and responds to live game events in real time, so you never have to manually set a scene on game day again.
+| | |
+|---|---|
+| **Version** | 0.2 |
+| **Status** | Draft |
+| **Last updated** | 2026-06-18 |
+| **Owner** | Jonathan, Haven Lighting |
+| **Target / scope** | 9 Series, 9 Series Pro, Q Series, Q Series Pro (full-color outdoor) |
+| **Classification** | Internal |
 
 ---
 
-## Overview
+*Haven Game Day Technology brings your team's colors to life — automatically. Built into every Haven full-color outdoor lighting system, this Sports AI feature connects your favorite teams directly to your lights and responds to live game events in real time, so you never have to manually set a scene on game day again.*
+
+## 1. Overview
 
 Game Day Technology is a free, built-in feature included with all Haven full-color outdoor lighting systems: **9 Series**, **9 Series Pro**, **Q Series**, and **Q Series Pro**. Once a user links their favorite professional or college sports teams in the Haven app, the system takes over — automatically triggering lighting scenes before, during, and after every game.
 
 Setup is straightforward: select your teams in the Haven app, and Haven handles the rest.
 
----
+## 2. Goals & Non-Goals
 
-## Lighting Scenes
+- **Goals** — automatically trigger team-colored lighting scenes (and Pro animated light shows) around live game events, with zero manual setup once teams are linked.
+- **Non-Goals** — manual scene authoring; sports not covered by the Sports AI data source; indoor or non-full-color product lines.
+
+## 3. Lighting Scenes
 
 All compatible systems include five automatic scenes that fire at key moments throughout the game:
 
@@ -28,7 +38,7 @@ All compatible systems include five automatic scenes that fire at key moments th
 
 ---
 
-## Pro Animated Light Shows
+## 4. Pro Animated Light Shows
 
 **9 Series Pro** and **Q Series Pro** systems unlock three exclusive animated light show events in addition to the standard scenes:
 
@@ -42,7 +52,7 @@ These animated shows are exclusive to Pro-tier systems and are not available on 
 
 ---
 
-## Product Tier Comparison
+## 5. Product Tier Comparison
 
 | Feature | 9 Series / Q Series | 9 Series Pro / Q Series Pro |
 |---|---|---|
@@ -56,7 +66,7 @@ These animated shows are exclusive to Pro-tier systems and are not available on 
 
 ---
 
-## Ideal Use Cases
+## 6. Ideal Use Cases
 
 Game Day Technology is designed for anyone who wants to wear their team pride on their home or business:
 
@@ -68,3 +78,19 @@ Game Day Technology is designed for anyone who wants to wear their team pride on
 ---
 
 Haven Game Day Technology turns every game into an experience — no manual setup, no missed moments, just your team's colors exactly when it matters most.
+
+## 7. Open Questions
+
+| # | Question | Owner |
+|---|---|---|
+| 1 | Which sports leagues/data source feed live game events, and what is the event latency? | Product / backend |
+| 2 | How are scene/light-show colors derived per team (team color database)? | Product |
+| 3 | What happens on scheduling conflicts (two linked teams playing simultaneously)? | Product |
+| 4 | Score Light Show is excluded for basketball — are there other per-sport exclusions to document? | Product |
+
+## Revision History
+
+| Version | Date | Author | Change |
+|---|---|---|---|
+| 0.1 | 2026-06-18 | Jonathan | Initial draft |
+| 0.2 | 2026-06-18 | Jonathan | Standardized to common spec template (metadata table, numbered sections, Goals/Non-Goals, Open Questions, Revision History) |

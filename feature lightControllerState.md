@@ -1,8 +1,13 @@
-# Light & Controller State Management — Specification
+# Light & Controller State Management
 
-**Version:** 0.1 · **Last updated:** 2026-06-18  
-**Status:** Draft  
-**Classification:** Confidential
+| | |
+|---|---|
+| **Version** | 0.2 |
+| **Status** | Draft |
+| **Last updated** | 2026-06-18 |
+| **Owner** | Jonathan, Haven Lighting |
+| **Target / scope** | Haven platform — light & controller state management |
+| **Classification** | Confidential |
 
 ---
 
@@ -24,6 +29,7 @@ This document specifies the architecture for managing and querying the state of 
 8. [Background Polling Service](#8-background-polling-service)
 9. [API Access Model](#9-api-access-model)
 10. [Open Questions](#10-open-questions)
+11. [Revision History](#revision-history)
 
 ---
 
@@ -50,6 +56,12 @@ There are two ways to access state information:
 |---|---|---|
 | **Current State** | The latest known snapshot of a light or controller. | Customers (mobile app) |
 | **Timeline** | A chronological log of state changes with timestamps and reasons. | Internal support tools only |
+
+### Non-Goals
+
+- Real-time streaming of state to customers (current-state snapshots only).
+- Exposing the telemetry timeline to customers (internal support tooling only).
+- Selecting the underlying storage technology — left to the server team (see §10).
 
 ---
 
@@ -345,4 +357,13 @@ A low-overhead background service that periodically attempts to contact recently
 
 ---
 
-*End of Light & Controller State Management Specification v0.1*
+## Revision History
+
+| Version | Date | Author | Change |
+|---|---|---|---|
+| 0.1 | 2026-06-18 | Jonathan | Initial draft |
+| 0.2 | 2026-06-18 | Jonathan | Standardized to common spec template (metadata table, plain title, Non-Goals subsection, Revision History) |
+
+---
+
+*End of Light & Controller State Management Specification v0.2*

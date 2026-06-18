@@ -1,8 +1,17 @@
 # Generic Music
 
-**Version:** 0.1 · **Last updated:** 2026-06-18
+| | |
+|---|---|
+| **Version** | 0.2 |
+| **Status** | Draft |
+| **Last updated** | 2026-06-18 |
+| **Owner** | Jonathan, Haven Lighting |
+| **Target / scope** | Haven lighting controllers — lightweight music sync tier |
+| **Classification** | Internal |
 
-## Overview
+---
+
+## 1. Overview
 
 Generic Music is a feature that enables Haven lighting controllers to choreograph lighting effects in real time to a song that is currently playing. The goal is to give users the sense of a live, music-driven light show — a party atmosphere — without requiring any deep analysis of the audio itself.
 
@@ -10,11 +19,16 @@ This feature represents the lightweight tier of music synchronization. It operat
 
 All lighting controllers participating in a Generic Music session share synchronized UTC clocks, allowing a single broadcast of song metadata to drive coordinated, time-accurate effects across every device simultaneously.
 
+## 2. Goals & Non-Goals
+
+- **Goals** — drive coordinated, time-accurate lighting from lightweight broadcast song metadata using synchronized UTC clocks, with graceful idle behavior between songs.
+- **Non-Goals** — playlist-based synchronization with pre-analyzed beat-mapped data (separate tier); on-device audio analysis; the effect equations themselves (deferred, see §4).
+
 ---
 
-## Section 1: Data Model and Runtime Behavior
+## 3. Data Model and Runtime Behavior
 
-### 1.1 `GenericMusic` Input Schema
+### 3.1 `GenericMusic` Input Schema
 
 When a song begins playing, the song server broadcasts a `GenericMusic` payload to all listening controllers. The payload has the following fields:
 
@@ -27,7 +41,7 @@ When a song begins playing, the song server broadcasts a `GenericMusic` payload 
 | `colors` | `string[]` | A palette of color names to be used in effect calculations (e.g., `["red", "amber", "white"]`) |
 | `epochStartTime` | `int` | UTC epoch time in milliseconds representing the exact moment the stereo began playing the song |
 
-### 1.2 Song Sections
+### 3.2 Song Sections
 
 The `transitions` array divides the song into discrete sections. For a transitions array of `[15.0, 17.0, 202.0, 456.0]`, the controller derives the following sections:
 
@@ -41,7 +55,7 @@ The `transitions` array divides the song into discrete sections. For a transitio
 
 At each transition boundary, the controller **snaps immediately** to a new lighting effect. There is no blend or crossfade between sections.
 
-### 1.3 Position Calculation
+### 3.3 Position Calculation
 
 Because all controllers share synchronized UTC clocks and are given the same `epochStartTime`, each controller independently calculates its current position in the song at any moment:
 
@@ -51,7 +65,7 @@ currentPosition (seconds) = (nowUTC_ms - epochStartTime) / 1000.0
 
 The controller uses `currentPosition` to determine which section it is in and which effect to apply.
 
-### 1.4 End-of-Song Behavior
+### 3.4 End-of-Song Behavior
 
 The controller may not always receive explicit notification that a song has ended. When `currentPosition` exceeds `duration`, or when no new `GenericMusic` command has been received, the controller transitions to a **calm idle state**:
 
@@ -63,7 +77,7 @@ The idle state should be visually calm and unobtrusive — it must not resemble 
 
 ---
 
-## Section 2: Effect Calculations
+## 4. Effect Calculations
 
 *This section is reserved for future definition.*
 
@@ -79,4 +93,18 @@ The specific equations governing each lighting effect will be defined in a futur
 
 ---
 
-*Open items: Effect equation definitions (Section 2) are pending authoring.*
+## 5. Open Questions
+
+| # | Question | Owner |
+|---|---|---|
+| 1 | Effect equation definitions (§4) — the ~ten effects and their equations are pending authoring. | Firmware / product |
+| 2 | How is the effect-per-section rotation order determined (fixed sequence, mood-driven, random seeded)? | Firmware / product |
+| 3 | What clock-skew tolerance is acceptable across controllers before sync looks visibly off? | Firmware |
+| 4 | What are the exact parameters of the calm idle "wavy" effect? | Firmware / product |
+
+## Revision History
+
+| Version | Date | Author | Change |
+|---|---|---|---|
+| 0.1 | 2026-06-18 | Jonathan | Initial draft |
+| 0.2 | 2026-06-18 | Jonathan | Standardized to common spec template (metadata table, numbered sections, Goals/Non-Goals, Open Questions, Revision History) |

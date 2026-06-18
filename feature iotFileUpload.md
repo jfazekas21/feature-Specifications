@@ -1,6 +1,15 @@
-# Feature: IoT File Upload — On-Demand Debug Log Upload (ESP32-S3 → Azure Blob Storage)
+# IoT File Upload
 
-**Version:** 0.5 · **Last updated:** 2026-06-18
+| | |
+|---|---|
+| **Version** | 0.6 |
+| **Status** | Draft |
+| **Last updated** | 2026-06-18 |
+| **Owner** | Jonathan, Haven Lighting |
+| **Target / scope** | On-demand debug log upload, ESP32-S3 → Azure Blob Storage |
+| **Classification** | Internal |
+
+---
 
 ## 1. Overview & Goals
 Enable a support engineer or admin to pull debug logs — Wi-Fi, Bluetooth, Ethernet performance logs — off a specific ESP32-S3 device on a home network, for manual case debugging. The Azure backend orchestrates the process securely, tolerates unreliable home connectivity via resumable uploads, guarantees unique file names with timestamps, and never overwrites existing files.
@@ -219,5 +228,9 @@ httpPut(blobUrl + "&comp=blocklist", blockListXml, headersWithMetadata);
 - Max log file size and default block size?
 - Native IoT Hub file upload vs. custom SAS flow? (Not being decided yet.)
 
-## Status
-Draft — updated 2026-06-18.
+## Revision History
+
+| Version | Date | Author | Change |
+|---|---|---|---|
+| 0.5 | 2026-06-18 | Jonathan | Prior draft |
+| 0.6 | 2026-06-18 | Jonathan | Standardized to common spec template (metadata table, plain title, folded closing Status into metadata, added Revision History) |
