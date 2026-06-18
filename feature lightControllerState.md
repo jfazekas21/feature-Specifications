@@ -1,6 +1,6 @@
 # Light & Controller State Management — Specification
 
-**Version:** 0.1  
+**Version:** 0.1 · **Last updated:** 2026-06-18  
 **Status:** Draft  
 **Classification:** Confidential
 

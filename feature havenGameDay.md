@@ -1,5 +1,7 @@
 # Haven Game Day Technology
 
+**Version:** 0.1 · **Last updated:** 2026-06-18
+
 Haven Game Day Technology brings your team's colors to life — automatically. Built into every Haven full-color outdoor lighting system, this Sports AI feature connects your favorite teams directly to your lights and responds to live game events in real time, so you never have to manually set a scene on game day again.
 
 ---

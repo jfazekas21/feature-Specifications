@@ -1,5 +1,7 @@
 # Generic Music
 
+**Version:** 0.1 · **Last updated:** 2026-06-18
+
 ## Overview
 
 Generic Music is a feature that enables Haven lighting controllers to choreograph lighting effects in real time to a song that is currently playing. The goal is to give users the sense of a live, music-driven light show — a party atmosphere — without requiring any deep analysis of the audio itself.

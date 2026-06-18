@@ -1,5 +1,6 @@
 # Folder Sync — Feature Specification
 
+**Version:** 0.1 · **Last updated:** 2026-06-18
 **Status:** Draft
 **Owner:** Jonathan, Haven Lighting
 **Target device:** ESP32-S3 lighting controller

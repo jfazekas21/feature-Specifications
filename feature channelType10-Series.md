@@ -1,5 +1,7 @@
 # Ten Series
 
+**Version:** 0.1 · **Last updated:** 2026-06-18
+
 ## Overview
 
 Ten Series is a new channel type for X Series lighting controllers, designed for installations with **96-inch LED spacing**. It uses an **RGBWW** configuration — red, green, blue, plus two distinct white channels (W1 and W2).
