@@ -2,12 +2,15 @@
 
 | | |
 |---|---|
-| **Version** | 0.2 |
+| **Version** | 0.3 |
 | **Status** | Draft |
-| **Last updated** | 2026-06-18 |
+| **Last updated** | 2026-06-19 |
 | **Owner** | Jonathan, Haven Lighting |
 | **Target / scope** | 9 Series, 9 Series Pro, Q Series, Q Series Pro (full-color outdoor) |
 | **Classification** | Internal |
+
+> Status values: `Draft` · `In Review` · `Approved` · `Deprecated`.
+> Bump **Version** and add a **Revision History** row on every edit.
 
 ---
 
@@ -94,3 +97,8 @@ Haven Game Day Technology turns every game into an experience — no manual setu
 |---|---|---|---|
 | 0.1 | 2026-06-18 | Jonathan | Initial draft |
 | 0.2 | 2026-06-18 | Jonathan | Standardized to common spec template (metadata table, numbered sections, Goals/Non-Goals, Open Questions, Revision History) |
+| 0.3 | 2026-06-19 | Jonathan | Added status-values note under metadata and closing footer for cross-document consistency |
+
+---
+
+*End of Haven Game Day Technology Specification v0.3*

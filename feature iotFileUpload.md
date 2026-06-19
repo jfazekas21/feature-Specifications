@@ -2,21 +2,27 @@
 
 | | |
 |---|---|
-| **Version** | 0.7 |
+| **Version** | 0.8 |
 | **Status** | Draft |
-| **Last updated** | 2026-06-18 |
+| **Last updated** | 2026-06-19 |
 | **Owner** | Jonathan, Haven Lighting |
 | **Target / scope** | On-demand debug log upload, ESP32-S3 → Azure Blob Storage |
 | **Classification** | Internal |
 
+> Status values: `Draft` · `In Review` · `Approved` · `Deprecated`.
+> Bump **Version** and add a **Revision History** row on every edit.
+
 ---
 
-## 1. Overview & Goals
+## 1. Overview
 Enable a support engineer or admin to pull debug logs — Wi-Fi, Bluetooth, Ethernet performance logs — off a specific ESP32-S3 device on a home network, for manual case debugging. The Azure backend orchestrates the process securely, tolerates unreliable home connectivity via resumable uploads, guarantees unique file names with timestamps, and never overwrites existing files.
 
-The device side is intentionally minimal: it supports exactly **two commands** (see §3). The backend handles all orchestration, authorization, and storage.
+The device side is intentionally minimal: it supports exactly **two commands** (see §4). The backend handles all orchestration, authorization, and storage.
 
-### Goals
+## 2. Goals & Non-Goals
+
+**Goals**
+
 - Command-driven, two-phase flow: list available files, then upload a chosen subset.
 - One unique blob per file/session, with timestamps in the path.
 - Resumable uploads for flaky home networks.
@@ -25,20 +31,21 @@ The device side is intentionally minimal: it supports exactly **two commands** (
 - Security via short-lived SAS tokens; devices never hold account keys.
 - Direct device-to-blob uploads to minimize server load.
 
-### Non-Goals
+**Non-Goals**
+
 - File processing / transformation pipelines (handled downstream).
 - Real-time telemetry streaming (separate spec).
 - Cross-fleet log analytics (manual, per-device debugging is the v1 use case).
 
-## 2. Triggers & Actors
+## 3. Triggers & Actors
 The same command payload can reach the device through any of three channels, dispatched by different actors, all handled by one transport-agnostic command handler on the device:
 - **Installer, on-site** → BLE from the mobile app.
 - **Support/admin** → Azure IoT Hub direct method.
 - **App** → HTTP response.
 
-BLE is a **trigger only** — the device always uploads to Azure Blob Storage directly over its own Wi-Fi/Ethernet connection. The phone never relays log data. Per-channel authorization (different trust levels per actor) is deferred — see §8.
+BLE is a **trigger only** — the device always uploads to Azure Blob Storage directly over its own Wi-Fi/Ethernet connection. The phone never relays log data. Per-channel authorization (different trust levels per actor) is deferred — see §9.
 
-## 2.1 Flow Overview
+### 3.1 Flow Overview
 
 ```mermaid
 sequenceDiagram
@@ -76,12 +83,12 @@ sequenceDiagram
     Server-->>Device: 200 OK
 ```
 
-## 3. Device Command Interface
+## 4. Device Command Interface
 The device implements exactly two commands. Both accept a JSON payload and are independent of the channel they arrive on. The two are asymmetric:
 - **`ListFiles` is request/response** — its return payload (the list of available files) is essential.
 - **`UploadFiles` is fire-and-forget during the transfer** — no per-file handshakes or acknowledgments. After the device receives it, the subsequent communication is just the HTTP file uploads to the Blob Storage URL, followed by a single **completion callback** (one HTTP POST) when the whole run finishes.
 
-### 3.1 `ListFiles` — harvest available files
+### 4.1 `ListFiles` — harvest available files
 Device scans its filesystem (SPIFFS / LittleFS) and returns the set of files available for upload. This response is required.
 
 Response (device → backend):
@@ -97,8 +104,8 @@ Response (device → backend):
 ```
 The backend/app shows this list so the admin can select which files to pull.
 
-### 3.2 `UploadFiles` — upload a selected array to Blob Storage (blind / fire-and-forget)
-Command (backend → device): an array of file paths plus the target Blob Storage URL (a SAS-scoped base URL), and a `callbackUrl` for the completion POST. The command can be delivered as the payload of an HTTP response (or any channel). During the run the device sends no per-file acks — it just performs the HTTP uploads to Blob Storage. When the run finishes, it sends one completion callback (see §3.3).
+### 4.2 `UploadFiles` — upload a selected array to Blob Storage (blind / fire-and-forget)
+Command (backend → device): an array of file paths plus the target Blob Storage URL (a SAS-scoped base URL), and a `callbackUrl` for the completion POST. The command can be delivered as the payload of an HTTP response (or any channel). During the run the device sends no per-file acks — it just performs the HTTP uploads to Blob Storage. When the run finishes, it sends one completion callback (see §4.3).
 
 Command payload:
 ```json
@@ -115,9 +122,9 @@ Command payload:
   ]
 }
 ```
-For each file the device composes the destination blob name (see §4) and uploads it as a block blob with retry/resume (see §5). No status is sent during the run; when all files are processed the device fires a single completion callback (§3.3). The backend can also independently confirm results by observing Blob Storage (see §6).
+For each file the device composes the destination blob name (see §5) and uploads it as a block blob with retry/resume (see §6). No status is sent during the run; when all files are processed the device fires a single completion callback (§4.3). The backend can also independently confirm results by observing Blob Storage (see §7).
 
-### 3.3 Completion callback (device → backend)
+### 4.3 Completion callback (device → backend)
 When the `UploadFiles` run finishes, the device sends one HTTP POST to `callbackUrl` summarizing the outcome. On success the payload is compact; on error it carries as much diagnostic detail as the device can provide.
 
 Success:
@@ -178,9 +185,9 @@ Field notes:
 - Per-file `errorStage`: where it failed — e.g., `read-file`, `put-block`, `put-blocklist`, `dns`, `tls`, `connect`, `timeout`.
 - `httpStatus` / `azureErrorCode`: the actual response from Blob Storage when available (e.g., `403`/`AuthenticationFailed`, `409`/`BlobAlreadyExists`), so the cause is unambiguous.
 - Device context (`firmwareVersion`, `freeHeap`, `network`) is included on error to aid diagnosis without a second round-trip.
-- The callback remains best-effort — it can be lost on a flaky network — so the backend still reconciles against Blob Storage (see §6).
+- The callback remains best-effort — it can be lost on a flaky network — so the backend still reconciles against Blob Storage (see §7).
 
-## 4. Blob Naming & Organization (overwrite prevention)
+## 5. Blob Naming & Organization (overwrite prevention)
 ```
 logs/{deviceId}/{year}/{month}/{day}/{timestamp}-{logType}-debug.log
 ```
@@ -190,7 +197,7 @@ Example: `logs/dev-abc123/2026/06/18/2026-06-18T13-45-22-wifi-debug.log`
 - The `{timestamp}` and `{pathPrefix}` are supplied by the **server** in the `UploadFiles` command, so naming is server-controlled and consistent.
 - Device ID + timestamp + log type guarantees uniqueness and prevents overwrites — sufficient for manual case debugging (no separate case ID needed).
 
-## 5. Handling Unreliable Connections (Resumable Block Blob Upload)
+## 6. Handling Unreliable Connections (Resumable Block Blob Upload)
 A basic `Put Blob` is all-or-nothing. Use **block blobs** (`Put Block` + `Put Block List`) for resume support.
 
 Implementation notes (Arduino / ESP-IDF with `esp_http_client` or similar):
@@ -240,34 +247,27 @@ httpPut(blobUrl + "&comp=blocklist", blockListXml, headersWithMetadata);
 - Exponential backoff + max retries per block.
 - Azure IoT Hub's native file-upload feature is a managed alternative (handles SAS + completion notifications).
 
-## 6. Server-Side Responsibilities (Azure Functions / App Service / IoT Hub)
+## 7. Server-Side Responsibilities (Azure Functions / App Service / IoT Hub)
 - Dispatch `ListFiles`, receive and surface the file list to the admin/app.
 - For `UploadFiles`: mint a short-lived SAS scoped to the target container/prefix, build the command payload (base URL, path prefix, timestamp, `callbackUrl`, selected files), and send it.
 - Expose the `callbackUrl` endpoint to receive the device's completion POST (`status` ok/error + echoed blob URL).
 - Optional post-upload enrichment via Event Grid `BlobCreated` or a periodic job (`Set Blob Metadata` for exact receive time, etc.).
 
-## 7. Security & Scaling
+## 8. Security & Scaling
 - **SAS tokens**: scoped to a blob prefix (e.g., write to `logs/{deviceId}/*`), short expiry (30–60 min), generated server-side per upload session.
 - **One container recommended**: partition by device-ID prefix. A single storage account handles thousands of devices; split only if approaching ~20k requests/sec.
 - **Authentication**: Azure AD / Managed Identity on the server; devices never receive account keys.
 - **Reliability**: block blobs + retries; enable soft delete + versioning on the container.
 
-## 8. Error Handling & Monitoring
+## 9. Error Handling & Monitoring
 - **Device**: log failures locally; retry blocks/files within the current `UploadFiles` run; send a single completion POST (`ok`/`error`) at the end. A failed file is also simply absent from Blob Storage.
 - **Server**: log the completion callback from the device. Azure Monitor / Application Insights for backend-side observability.
 - **Storage**: diagnostics, versioning, soft delete.
 - **Edge cases**: partial uploads (resume), duplicate commands (idempotency via server timestamp/session), large logs (block-size tuning).
 
-## 9. Open Questions
-- Retention / cleanup policy for uploaded logs?
-- Per-channel authorization model (installer BLE vs. support direct method vs. app HTTP) — how does the device verify a command is legitimate? (Deferred.)
-- Does `ListFiles` need filtering (by log type, size, date) or is the full list fine?
-- Max log file size and default block size?
-- Native IoT Hub file upload vs. custom SAS flow? (Not being decided yet.)
-
 ## 10. Server Implementation
 
-This section specifies the concrete backend implementation that realizes the responsibilities in §6. The reference target is **Azure Functions** (HTTP-triggered), but any HTTP host works. The server exposes two endpoints — one to trigger a pull, one to receive the device's completion callback — and is the sole minter of SAS tokens and the sole authority on blob naming. The server **never relays file data**: devices upload block blobs directly to Blob Storage (§5).
+This section specifies the concrete backend implementation that realizes the responsibilities in §7. The reference target is **Azure Functions** (HTTP-triggered), but any HTTP host works. The server exposes two endpoints — one to trigger a pull, one to receive the device's completion callback — and is the sole minter of SAS tokens and the sole authority on blob naming. The server **never relays file data**: devices upload block blobs directly to Blob Storage (§6).
 
 ### 10.1 End-to-end flow
 1. An admin calls **`POST /api/trigger-upload`** with a `deviceId` and a `files` array (§11).
@@ -295,7 +295,7 @@ On a valid request the server:
 1. **Mints a SAS token** scoped to `logs/{deviceId}/` with **create + write only** permissions and a **28-hour expiry**. The token grants no read, list, or delete rights.
 2. **Generates a session timestamp** in `YYYY-MM-DDTHH-mm-ss` format (colons replaced with hyphens so it is safe inside a blob name).
 3. **Derives the `pathPrefix`** as `logs/{deviceId}/{year}/{month}/{day}/`.
-4. **Constructs the `UploadFiles` command payload** (§3.2) containing:
+4. **Constructs the `UploadFiles` command payload** (§4.2) containing:
    - `deviceId`
    - `blobBaseUrl` — the storage account URL + container + SAS token (e.g. `https://{STORAGE_ACCOUNT}.blob.core.windows.net/{CONTAINER}?{sasToken}`)
    - `pathPrefix`
@@ -313,12 +313,12 @@ Success response — **`202 Accepted`**:
 ```
 
 Notes:
-- The 28-hour SAS expiry supersedes the 30–60 min estimate in §7 — it covers devices that are offline or on intermittent home networks when the command is dispatched and need a long window to finish resumable uploads.
-- Because both `pathPrefix` and `timestamp` are server-supplied, blob naming is fully server-controlled (§4) and **device clock accuracy is irrelevant**.
+- The 28-hour SAS expiry supersedes the 30–60 min estimate in §8 — it covers devices that are offline or on intermittent home networks when the command is dispatched and need a long window to finish resumable uploads.
+- Because both `pathPrefix` and `timestamp` are server-supplied, blob naming is fully server-controlled (§5) and **device clock accuracy is irrelevant**.
 
 ## 12. `POST /api/uploads-complete`
 
-Receives the device's completion callback (§3.3).
+Receives the device's completion callback (§4.3).
 
 Request body: the device completion payload — `deviceId`, `status` (`ok` or `error`), the echoed `blobBaseUrl`, `completedAt`, `filesRequested`, `filesUploaded`, and on error a per-file array with `path`, `blobName`, `status`, `size`, `bytesUploaded`, `attempts`, `errorStage`, `httpStatus`, `azureErrorCode`, plus device diagnostics (`firmwareVersion`, `freeHeap`, `network`).
 
@@ -328,7 +328,7 @@ On receipt the server:
 
 ## 13. Storage, Retention & Lifecycle
 - **Container**: `device-logs`. **Public access is disabled**; all device access is via the minted SAS token only (§11).
-- **Retention**: all blobs under `device-logs/logs/` are **automatically deleted after 120 days** by an **Azure Blob Lifecycle Management** policy. This is platform-managed and requires **no application code** — answering the retention Open Question in §9.
+- **Retention**: all blobs under `device-logs/logs/` are **automatically deleted after 120 days** by an **Azure Blob Lifecycle Management** policy. This is platform-managed and requires **no application code** — answering the retention Open Question in §16.
 - **Authority**: blob names are always server-controlled (`{timestamp}-{logType}-debug.log` under the server-supplied `pathPrefix`), so listings are deterministic and reconciliation (§12) is exact.
 
 ## 14. Configuration & Environment Variables
@@ -352,6 +352,13 @@ On receipt the server:
 | `504 Gateway Timeout` | `/api/trigger-upload` | The direct method call timed out (no device response within 10s). |
 | `200 OK` | `/api/uploads-complete` | Always returned on a callback, regardless of reported `status`. |
 
+## 16. Open Questions
+- Retention / cleanup policy for uploaded logs?
+- Per-channel authorization model (installer BLE vs. support direct method vs. app HTTP) — how does the device verify a command is legitimate? (Deferred.)
+- Does `ListFiles` need filtering (by log type, size, date) or is the full list fine?
+- Max log file size and default block size?
+- Native IoT Hub file upload vs. custom SAS flow? (Not being decided yet.)
+
 ## Revision History
 
 | Version | Date | Author | Change |
@@ -359,3 +366,8 @@ On receipt the server:
 | 0.5 | 2026-06-18 | Jonathan | Prior draft |
 | 0.6 | 2026-06-18 | Jonathan | Standardized to common spec template (metadata table, plain title, folded closing Status into metadata, added Revision History) |
 | 0.7 | 2026-06-18 | Jonathan | Added server implementation (§10–§15): trigger-upload and uploads-complete endpoints, SAS minting, IoT Hub direct-method dispatch, Blob Storage reconciliation, lifecycle retention, env config, and HTTP status codes |
+| 0.8 | 2026-06-19 | Jonathan | Split §1 into Overview and a standalone §2 Goals & Non-Goals, renumbered §3–§9, corrected the Flow Overview heading to §3.1 (subsection level), moved Open Questions to the end (§16), and added the status-values note and closing footer |
+
+---
+
+*End of IoT File Upload Specification v0.8*

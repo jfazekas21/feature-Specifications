@@ -2,12 +2,15 @@
 
 | | |
 |---|---|
-| **Version** | 0.2 |
+| **Version** | 0.3 |
 | **Status** | Draft |
-| **Last updated** | 2026-06-18 |
+| **Last updated** | 2026-06-19 |
 | **Owner** | Jonathan, Haven Lighting |
 | **Target / scope** | Haven platform — light & controller state management |
 | **Classification** | Confidential |
+
+> Status values: `Draft` · `In Review` · `Approved` · `Deprecated`.
+> Bump **Version** and add a **Revision History** row on every edit.
 
 ---
 
@@ -20,16 +23,17 @@ This document specifies the architecture for managing and querying the state of 
 ## Table of Contents
 
 1. [Overview](#1-overview)
-2. [System Block Diagram](#2-system-block-diagram)
-3. [Data Types](#3-data-types)
-4. [State Inference Rules](#4-state-inference-rules)
-5. [State Ingestion Sources](#5-state-ingestion-sources)
-6. [State Confidence Model](#6-state-confidence-model)
-7. [Telemetry Timeline](#7-telemetry-timeline)
-8. [Background Polling Service](#8-background-polling-service)
-9. [API Access Model](#9-api-access-model)
-10. [Open Questions](#10-open-questions)
-11. [Revision History](#revision-history)
+2. [Goals & Non-Goals](#2-goals--non-goals)
+3. [System Block Diagram](#3-system-block-diagram)
+4. [Data Types](#4-data-types)
+5. [State Inference Rules](#5-state-inference-rules)
+6. [State Ingestion Sources](#6-state-ingestion-sources)
+7. [State Confidence Model](#7-state-confidence-model)
+8. [Telemetry Timeline](#8-telemetry-timeline)
+9. [Background Polling Service](#9-background-polling-service)
+10. [API Access Model](#10-api-access-model)
+11. [Open Questions](#11-open-questions)
+12. [Revision History](#revision-history)
 
 ---
 
@@ -57,15 +61,27 @@ There are two ways to access state information:
 | **Current State** | The latest known snapshot of a light or controller. | Customers (mobile app) |
 | **Timeline** | A chronological log of state changes with timestamps and reasons. | Internal support tools only |
 
-### Non-Goals
+---
+
+## 2. Goals & Non-Goals
+
+**Goals**
+
+- Track the current state of every light and every controller at any moment.
+- Record a timeline of state changes — with reasons — for support and diagnostics.
+- Capture *why* a light or controller changed state, not just the new state.
+- Accurately model online/offline status from real device signals.
+- Provide a background service that recovers recently offline controllers.
+
+**Non-Goals**
 
 - Real-time streaming of state to customers (current-state snapshots only).
 - Exposing the telemetry timeline to customers (internal support tooling only).
-- Selecting the underlying storage technology — left to the server team (see §10).
+- Selecting the underlying storage technology — left to the server team (see §11).
 
 ---
 
-## 2. System Block Diagram
+## 3. System Block Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -155,9 +171,9 @@ There are two ways to access state information:
 
 ---
 
-## 3. Data Types
+## 4. Data Types
 
-### 3.1 LightState
+### 4.1 LightState
 
 Represents the current or historical state of a single light.
 
@@ -175,7 +191,7 @@ Represents the current or historical state of a single light.
 | `changedByUser` | string | User identifier if reason is `mobileAppCommand` or service portal. Null otherwise. |
 | `confidence` | enum | `pending` · `confirmed` · `failed` |
 
-### 3.2 ControllerState
+### 4.2 ControllerState
 
 Represents the current or historical state of a single controller.
 
@@ -203,9 +219,9 @@ Represents the current or historical state of a single controller.
 
 ---
 
-## 4. State Inference Rules
+## 5. State Inference Rules
 
-### 4.1 Controller Online/Offline
+### 5.1 Controller Online/Offline
 
 | Signal | Result | Authority |
 |---|---|---|
@@ -218,7 +234,7 @@ Represents the current or historical state of a single controller.
 
 Offline state persists until an authoritative online signal is received. There is no automatic expiry.
 
-### 4.2 Light State Confidence
+### 5.2 Light State Confidence
 
 | Condition | `confidence` |
 |---|---|
@@ -230,28 +246,28 @@ A `pending` light state should be displayed to the user as unconfirmed in the mo
 
 ---
 
-## 5. State Ingestion Sources
+## 6. State Ingestion Sources
 
-### 5.1 D2C Messages (IoT Hub — controller-originated)
+### 6.1 D2C Messages (IoT Hub — controller-originated)
 
 - Receipt of any D2C message is an authoritative signal that the controller is `online` at that moment.
 - D2C messages carry both light state and change reason in the same payload.
 - Controller-originated change reasons (`powerCycle`, `scheduledEvent`, `pushButton`) and their timestamps come from the controller in the D2C payload and must be trusted as-is.
 
-### 5.2 Direct Methods (IoT Hub — server-originated)
+### 6.2 Direct Methods (IoT Hub — server-originated)
 
 - A successful response confirms the controller is `online`.
 - A timeout (30 seconds) confirms the controller is `offline` and marks any in-flight light state as `failed`.
 - When the server sends a lighting command, the light state is immediately set to `pending` with the expected new state.
 
-### 5.3 Device Announce (HTTP POST — controller-originated)
+### 6.3 Device Announce (HTTP POST — controller-originated)
 
 - Fired by the controller on boot or reconnection.
 - Provides: IP address, connection mode, Wi-Fi MAC, Ethernet MAC, AP MAC, Wi-Fi SSID.
 - All fields from device announce are written directly into ControllerState at the time of receipt.
 - Receipt of device announce is also an authoritative `online` signal.
 
-### 5.4 Server-Originated Change Reasons
+### 6.4 Server-Originated Change Reasons
 
 The server knows the reason for any command it initiates. The following reasons are assigned server-side at the time of command dispatch:
 
@@ -263,7 +279,7 @@ The server knows the reason for any command it initiates. The following reasons 
 
 ---
 
-## 6. State Confidence Model
+## 7. State Confidence Model
 
 ```
 Server sends lighting command
@@ -281,13 +297,13 @@ Server sends lighting command
 
 ---
 
-## 7. Telemetry Timeline
+## 8. Telemetry Timeline
 
-### 7.1 Purpose
+### 8.1 Purpose
 
 The timeline provides a chronological log of all state changes for a light or controller. It is for internal support use only and is not exposed to customers.
 
-### 7.2 StateChangeEvent record
+### 8.2 StateChangeEvent record
 
 Each state change produces a `StateChangeEvent` record appended to the timeline store. This record contains:
 
@@ -300,7 +316,7 @@ Each state change produces a `StateChangeEvent` record appended to the timeline 
 - Signal source that triggered the state change (D2C, Direct Method, device announce, background poll, server command)
 - Confidence level (for lights)
 
-### 7.3 Retention
+### 8.3 Retention
 
 - Default retention window: 24–48 hours.
 - After the window expires: delete or archive — server team to decide based on cost.
@@ -308,13 +324,13 @@ Each state change produces a `StateChangeEvent` record appended to the timeline 
 
 ---
 
-## 8. Background Polling Service
+## 9. Background Polling Service
 
-### 8.1 Purpose
+### 9.1 Purpose
 
 A low-overhead background service that periodically attempts to contact recently offline controllers to detect recovery.
 
-### 8.2 Rules
+### 9.2 Rules
 
 | Parameter | Value |
 |---|---|
@@ -324,7 +340,7 @@ A low-overhead background service that periodically attempts to contact recently
 | Exclusion | Controllers offline for 72 hours or more are ignored |
 | Rate | 3 controllers per minute (staggered) |
 
-### 8.3 Behavior
+### 9.3 Behavior
 
 - On success: controller transitions to `online`. `lastPolledAt` updated.
 - On timeout: controller remains `offline`. `lastPolledAt` updated. No retry until next poll cycle.
@@ -332,7 +348,7 @@ A low-overhead background service that periodically attempts to contact recently
 
 ---
 
-## 9. API Access Model
+## 10. API Access Model
 
 | Endpoint | Audience | Description |
 |---|---|---|
@@ -343,7 +359,7 @@ A low-overhead background service that periodically attempts to contact recently
 
 ---
 
-## 10. Open Questions
+## 11. Open Questions
 
 | # | Question | Owner |
 |---|---|---|
@@ -363,7 +379,8 @@ A low-overhead background service that periodically attempts to contact recently
 |---|---|---|---|
 | 0.1 | 2026-06-18 | Jonathan | Initial draft |
 | 0.2 | 2026-06-18 | Jonathan | Standardized to common spec template (metadata table, plain title, Non-Goals subsection, Revision History) |
+| 0.3 | 2026-06-19 | Jonathan | Promoted Goals & Non-Goals to standalone §2, renumbered §3–§11 and the table of contents, and added the status-values note |
 
 ---
 
-*End of Light & Controller State Management Specification v0.2*
+*End of Light & Controller State Management Specification v0.3*
