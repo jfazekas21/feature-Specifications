@@ -1,10 +1,10 @@
-# Folder Sync
+# iotFileSync
 
 | | |
 |---|---|
-| **Version** | 0.3 |
+| **Version** | 0.4 |
 | **Status** | Draft |
-| **Last updated** | 2026-06-19 |
+| **Last updated** | 2026-06-25 |
 | **Owner** | Jonathan, Haven Lighting |
 | **Target / scope** | ESP32-S3 lighting controller |
 | **Classification** | Internal |
@@ -16,7 +16,7 @@
 
 ## 1. Overview
 
-Folder Sync keeps a set of files on a RAM-constrained IoT controller (ESP32-S3) in step with an authoritative copy held on the server. The design optimizes for one thing above all: **minimizing the number of HTTP transactions** by maximizing the useful information carried in each payload and by pushing all comparison logic onto the device.
+iotFileSync keeps a set of files on a RAM-constrained IoT controller (ESP32-S3) in step with an authoritative copy held on the server. The design optimizes for one thing above all: **minimizing the number of HTTP transactions** by maximizing the useful information carried in each payload and by pushing all comparison logic onto the device.
 
 The system is built around a single per-device **manifest file** that the server maintains. The manifest lists every file the device should hold, along with each file's name, size, version, and a compact CRC tree used for change detection. The device's only routine contact with the server is a tiny poll for the manifest's version number. When that version has not moved, the device is fully synced and no further calls are made. When it has moved, the device fetches the changed portion of the manifest and then pulls only the changed bytes of the affected files using standard HTTP byte-range requests.
 
@@ -263,7 +263,8 @@ The measured number feeds directly into the chunk-leaf width decision (§10.2) a
 | 0.1 | 2026-06-18 | Jonathan | Initial draft |
 | 0.2 | 2026-06-18 | Jonathan | Standardized to common spec template (metadata table, plain title, Non-goals subsection, Revision History); removed duplicate "Last updated" line |
 | 0.3 | 2026-06-19 | Jonathan | Renamed §1 to "Overview", promoted Goals & Non-Goals to standalone §2, renumbered §3–§11 and all cross-references, and added the status-values note and closing footer |
+| 0.4 | 2026-06-25 | Jonathan | Renamed feature from "Folder Sync" to "iotFileSync" |
 
 ---
 
-*End of Folder Sync Specification v0.3*
+*End of iotFileSync Specification v0.4*
